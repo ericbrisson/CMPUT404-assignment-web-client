@@ -53,7 +53,10 @@ class HTTPClient(object):
             self.port = 80
 
         # set path from parse
-        self.path = parsed_url.path
+        if (parsed_url.path):
+            self.path = parsed_url.path
+        else:
+            self.path = "/"
 
     def connect(self, host, port):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -119,14 +122,8 @@ class HTTPClient(object):
         # then, add Host header, for which the value is given to us in url param
         request += 'Host: ' + self.host + '\r\n'
 
-        #request += 'User-Agent: cmput404-a2' + '\r\n'
-
-        request += 'Accept: */*' + '\r\n'
-
         # then, add Connetion header, for which the value should be close
-        request += 'Connection: close\r\n\n'
-
-        print(request)
+        request += 'Connection: close\r\n\r\n'
 
         # then connect, send, receive, and close
         self.connect(self.host, self.port)
@@ -137,9 +134,44 @@ class HTTPClient(object):
         return HTTPResponse(self.get_code(response), self.get_body(response))
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
-        return HTTPResponse(code, body)
+        # parse url
+        self.get_host_port(url)
+
+        # start building request byte string
+        # begin request with GET and HTTP version 1.1
+        request = 'POST ' + self.path + ' HTTP/1.1\r\n'
+
+        # then, add Host header, for which the value is given to us in url param
+        request += 'Host: ' + self.host + '\r\n'
+
+        # the, add the Content-Type header, for which only application/x-www-form-urlencoded is supported
+        request += 'Content-Type: ' + 'application/x-www-form-urlencoded' + '\r\n'
+
+        # then, prepare body
+        if (args):
+            body = urllib.parse.urlencode(args)
+            content_length = len(body)
+        else:
+            body = " "
+            content_length = 0
+
+        # then, add Content-Length header
+        request += "Content-Length: " + str(content_length) + "\r\n"
+        
+        # then, add Connection header, for which the value should be close
+        request += 'Connection: close\r\n\r\n' # add extra \r\n to seperate body
+
+        # then, add body
+        if (args):
+            request += body # don't need \r\n here
+
+        # then connect, send, receive, and close
+        self.connect(self.host, self.port)
+        self.sendall(request)
+        response = self.recvall()
+        self.close()
+
+        return HTTPResponse(self.get_code(response), self.get_body(response))
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
