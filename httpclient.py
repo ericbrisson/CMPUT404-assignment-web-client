@@ -60,7 +60,10 @@ class HTTPClient(object):
         parsed_url = urllib.parse.urlparse(url)
 
         # set host to netloc from parse
-        self.host = parsed_url.hostname
+        if (parsed_url.netloc):
+            self.host = parsed_url.netloc
+        else:
+            self.host = parsed_url.hostname
 
         # set port to port from parse
         if (parsed_url.port):
