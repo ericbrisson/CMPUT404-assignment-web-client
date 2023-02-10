@@ -59,11 +59,16 @@ class HTTPClient(object):
         # extract host and port
         parsed_url = urllib.parse.urlparse(url)
 
-        # set host to netloc from parse
-        if (parsed_url.netloc):
-            self.host = parsed_url.netloc
-        else:
+        # set host to hostname netloc from parse
+        if (parsed_url.hostname):
             self.host = parsed_url.hostname
+        elif (parsed_url.netloc):
+            self.host = parsed_url.netloc
+        
+
+        self.query_params = None
+        if (parsed_url.query):
+            self.query_params = parsed_url.query
 
         # set port to port from parse
         if (parsed_url.port):
@@ -136,7 +141,19 @@ class HTTPClient(object):
 
         # start building request byte string
         # begin request with GET and HTTP version 1.1
-        request = 'GET ' + self.path + ' HTTP/1.1\r\n'
+        request = ""
+        if (self.query_params):
+            if (args):
+                request = 'GET ' + self.path + "?" + self.query_params + "&" + urllib.parse.urlencode(args) + ' HTTP/1.1\r\n' # FIX
+            else:
+                request = 'GET ' + self.path + "?" + self.query_params + ' HTTP/1.1\r\n'
+
+        else:
+            if (args):
+                request = 'GET ' + self.path + "?" + urllib.parse.urlencode(args) +' HTTP/1.1\r\n' # FIX
+            else:
+                request = 'GET ' + self.path + ' HTTP/1.1\r\n'
+            
 
         # then, add Host header, for which the value is given to us in url param
         request += 'Host: ' + self.host + '\r\n'
